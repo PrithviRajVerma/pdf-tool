@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import concurrent.futures
 import shutil
 import subprocess
 import time
@@ -240,11 +241,31 @@ class MarkdownToPdfAdapter(BaseAdapter):
         except Exception as exc:
             raise InvalidInputError(f"Failed to read Markdown file '{input_path}': {exc}") from exc
 
-        # Setup Markdown parser with extensions and custom fence handler
+        # Setup Markdown parser with extensions
         md = MarkdownIt(
             "commonmark",
             {"highlight": _highlight_code, "typographer": True},
         ).enable(["table", "strikethrough"])
+
+        tokens = md.parse(content)
+
+        # Pre-render all unique Mermaid blocks in parallel for high performance
+        mermaid_blocks: list[str] = []
+        for token in tokens:
+            if token.type == "fence":
+                info = token.info.strip().lower()
+                lang = info.split()[0] if info else ""
+                if lang == "mermaid" and token.content:
+                    mermaid_blocks.append(token.content)
+
+        diagram_cache: dict[str, str | None] = {}
+        if mermaid_blocks:
+            unique_blocks = list(dict.fromkeys(mermaid_blocks))
+            max_workers = min(8, len(unique_blocks))
+            with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+                rendered_svgs = list(executor.map(render_mermaid_to_svg, unique_blocks))
+                for block, svg in zip(unique_blocks, rendered_svgs):
+                    diagram_cache[block] = svg
 
         default_fence = md.renderer.rules.get("fence")
 
@@ -253,7 +274,7 @@ class MarkdownToPdfAdapter(BaseAdapter):
             info = token.info.strip().lower()
             lang = info.split()[0] if info else ""
             if lang == "mermaid":
-                svg = render_mermaid_to_svg(token.content)
+                svg = diagram_cache.get(token.content)
                 if svg:
                     return f'<div class="mermaid-diagram">{svg}</div>\n'
             if default_fence:
@@ -262,7 +283,7 @@ class MarkdownToPdfAdapter(BaseAdapter):
 
         md.renderer.rules["fence"] = custom_fence
 
-        rendered_html = md.render(content)
+        rendered_html = md.renderer.render(tokens, md.options, {})
         pygments_css = pygments.formatters.HtmlFormatter().get_style_defs(".highlight")
         custom_css = options.get("css", "")
 
