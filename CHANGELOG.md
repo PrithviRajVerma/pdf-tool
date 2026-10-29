@@ -20,7 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Multi-file PDF merging, page splitting (ranges and chunk intervals), and Ghostscript/pypdf compression.
 - **Office & Web Formats (Phase 2):**
   - Headless LibreOffice conversion wrapper with isolated temporary user profiles supporting DOCX, PPTX, XLSX, ODT, RTF, and CSV.
-  - Markdown to PDF conversion using `markdown-it-py` and WeasyPrint with Pygments syntax highlighting and clean typography.
+  - Markdown to PDF conversion using `markdown-it-py` and WeasyPrint with Pygments syntax highlighting, clean typography, and A4 page layout controls.
+  - Native Mermaid.js diagram and flowchart vector SVG rendering via `@mermaid-js/mermaid-cli` (`mmdc`) with transparent backgrounds and printable height constraints.
+  - Thread-pool pre-compilation (`ThreadPoolExecutor`) for parallel rendering of multiple Mermaid diagram blocks in large markdown files.
+  - Automatic syntax sanitization and retry recovery for common Mermaid edge-case quirks (such as unquoted parentheses in edge labels).
   - Local HTML to PDF conversion via WeasyPrint.
 - **Reverse Conversions & OCR (Phase 3):**
   - PDF to Word (`.docx`) document structure reconstruction via `pdf2docx`.
