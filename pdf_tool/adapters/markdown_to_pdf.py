@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import re
 import shutil
 import subprocess
 import time
@@ -161,27 +162,42 @@ def find_mmdc_binary() -> str | None:
     return None
 
 
+def _sanitize_mermaid(code: str) -> str:
+    """Sanitize common Mermaid syntax quirks, such as unquoted edge labels containing parentheses."""
+
+    def quote_edge_label(match: re.Match) -> str:
+        inner = match.group(1).strip()
+        if inner.startswith('"') and inner.endswith('"'):
+            return f"|{inner}|"
+        inner_cleaned = inner.replace('"', "'")
+        return f'|"{inner_cleaned}"|'
+
+    return re.sub(r"\|([^|\r\n]*\([^|\r\n]*\)[^|\r\n]*)\|", quote_edge_label, code)
+
+
 def render_mermaid_to_svg(code: str, timeout: float = 15.0) -> str | None:
     """Render Mermaid diagram code to SVG string using mmdc."""
     mmdc_path = find_mmdc_binary()
     if not mmdc_path:
         return None
 
+    cmd = [
+        mmdc_path,
+        "-i",
+        "-",
+        "-o",
+        "-",
+        "-e",
+        "svg",
+        "-b",
+        "transparent",
+        "--no-font-embed",
+        "-q",
+    ]
+
     try:
         proc = subprocess.run(
-            [
-                mmdc_path,
-                "-i",
-                "-",
-                "-o",
-                "-",
-                "-e",
-                "svg",
-                "-b",
-                "transparent",
-                "--no-font-embed",
-                "-q",
-            ],
+            cmd,
             input=code,
             text=True,
             capture_output=True,
@@ -190,6 +206,20 @@ def render_mermaid_to_svg(code: str, timeout: float = 15.0) -> str | None:
         )
         if proc.returncode == 0 and proc.stdout.strip().startswith("<svg"):
             return proc.stdout.strip()
+
+        # Retry with sanitized syntax if first attempt failed
+        sanitized = _sanitize_mermaid(code)
+        if sanitized != code:
+            proc_retry = subprocess.run(
+                cmd,
+                input=sanitized,
+                text=True,
+                capture_output=True,
+                timeout=timeout,
+                check=False,
+            )
+            if proc_retry.returncode == 0 and proc_retry.stdout.strip().startswith("<svg"):
+                return proc_retry.stdout.strip()
     except Exception:
         return None
     return None
