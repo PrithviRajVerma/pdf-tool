@@ -139,6 +139,7 @@ hr {
 
 .mermaid-diagram svg {
     max-width: 100%;
+    max-height: 240mm;
     height: auto;
     display: inline-block;
     margin: 0 auto;
