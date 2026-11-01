@@ -195,6 +195,28 @@ def render_mermaid_to_svg(code: str, timeout: float = 15.0) -> str | None:
         "-q",
     ]
 
+    config_path = Path(__file__).parent / "mermaid_config.json"
+    if not config_path.exists():
+        try:
+            config_path.write_text(
+                '{\n  "flowchart": {\n    "htmlLabels": false\n  },\n  "htmlLabels": false\n}\n',
+                encoding="utf-8",
+            )
+        except Exception:
+            temp_config = Path("/tmp/pdf_tool_mermaid_config.json")
+            if not temp_config.exists():
+                try:
+                    temp_config.write_text(
+                        '{"flowchart": {"htmlLabels": false}, "htmlLabels": false}',
+                        encoding="utf-8",
+                    )
+                except Exception:
+                    pass
+            config_path = temp_config
+
+    if config_path.exists():
+        cmd.extend(["-c", str(config_path)])
+
     try:
         proc = subprocess.run(
             cmd,

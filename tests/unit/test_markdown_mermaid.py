@@ -19,7 +19,7 @@ def test_find_mmdc_binary():
 
 
 def test_sanitize_mermaid():
-    raw = "graph LR\n  A -->|Some (unquoted) label| B\n  C -.->|Already (quoted)| D\n  E ==>|\"Quoted (test)\"| F"
+    raw = 'graph LR\n  A -->|Some (unquoted) label| B\n  C -.->|Already (quoted)| D\n  E ==>|"Quoted (test)"| F'
     sanitized = _sanitize_mermaid(raw)
     assert 'A -->|"Some (unquoted) label"| B' in sanitized
     assert 'C -.->|"Already (quoted)"| D' in sanitized
@@ -32,6 +32,8 @@ def test_render_mermaid_to_svg_success():
     assert svg is not None
     assert svg.startswith("<svg")
     assert "</svg>" in svg
+    assert "<text" in svg
+    assert "foreignObject" not in svg
 
 
 def test_render_mermaid_to_svg_with_parentheses_retry():
