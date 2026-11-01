@@ -193,7 +193,9 @@ def _sanitize_mermaid(code: str) -> str:
     return "\n".join(lines)
 
 
-def render_mermaid_to_svg(code: str, timeout: float = 15.0) -> str | None:
+def render_mermaid_to_svg(
+    code: str, timeout: float = 15.0, svg_id: str | None = None
+) -> str | None:
     """Render Mermaid diagram code to SVG string using mmdc."""
     mmdc_path = find_mmdc_binary()
     if not mmdc_path:
@@ -234,6 +236,9 @@ def render_mermaid_to_svg(code: str, timeout: float = 15.0) -> str | None:
 
     if config_path.exists():
         cmd.extend(["-c", str(config_path)])
+
+    if svg_id:
+        cmd.extend(["-I", svg_id])
 
     try:
         proc = subprocess.run(
@@ -332,9 +337,13 @@ class MarkdownToPdfAdapter(BaseAdapter):
         if mermaid_blocks:
             unique_blocks = list(dict.fromkeys(mermaid_blocks))
             max_workers = min(8, len(unique_blocks))
+
+            def _render_worker(item: tuple[int, str]) -> tuple[str, str | None]:
+                idx, block = item
+                return block, render_mermaid_to_svg(block, svg_id=f"mermaid-diag-{idx}")
+
             with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
-                rendered_svgs = list(executor.map(render_mermaid_to_svg, unique_blocks))
-                for block, svg in zip(unique_blocks, rendered_svgs):
+                for block, svg in executor.map(_render_worker, enumerate(unique_blocks)):
                     diagram_cache[block] = svg
 
         default_fence = md.renderer.rules.get("fence")
