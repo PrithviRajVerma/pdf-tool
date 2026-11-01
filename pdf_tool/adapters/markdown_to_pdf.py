@@ -163,7 +163,12 @@ def find_mmdc_binary() -> str | None:
 
 
 def _sanitize_mermaid(code: str) -> str:
-    """Sanitize common Mermaid syntax quirks, such as unquoted edge labels containing parentheses."""
+    """Sanitize common Mermaid syntax quirks.
+
+    - Unquoted edge labels containing parentheses.
+    - Invalid sequence diagram bidirectional arrows (<->> instead of <<->>).
+    - Unescaped semicolons inside sequence diagram message labels and notes.
+    """
 
     def quote_edge_label(match: re.Match) -> str:
         inner = match.group(1).strip()
@@ -172,7 +177,20 @@ def _sanitize_mermaid(code: str) -> str:
         inner_cleaned = inner.replace('"', "'")
         return f'|"{inner_cleaned}"|'
 
-    return re.sub(r"\|([^|\r\n]*\([^|\r\n]*\)[^|\r\n]*)\|", quote_edge_label, code)
+    code = re.sub(r"\|([^|\r\n]*\([^|\r\n]*\)[^|\r\n]*)\|", quote_edge_label, code)
+    code = re.sub(r"(\w+)\s*<->>\s*(\w+)", r"\1<<->>\2", code)
+
+    lines = []
+    is_sequence = "sequenceDiagram" in code
+    for line in code.split("\n"):
+        if is_sequence and ":" in line and not line.strip().startswith("%%"):
+            parts = line.split(":", 1)
+            left_lower = parts[0].lower()
+            if any(k in left_lower for k in ["->", "--", "note", "activate", "deactivate"]):
+                line = parts[0] + ":" + parts[1].replace(";", "#59;")
+        lines.append(line)
+
+    return "\n".join(lines)
 
 
 def render_mermaid_to_svg(code: str, timeout: float = 15.0) -> str | None:

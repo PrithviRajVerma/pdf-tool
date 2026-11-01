@@ -26,6 +26,19 @@ def test_sanitize_mermaid():
     assert 'E ==>|"Quoted (test)"| F' in sanitized
 
 
+def test_sanitize_mermaid_sequence_diagram():
+    seq = (
+        "sequenceDiagram\n"
+        "  API->>API: Validate input; rate-limit; hash password\n"
+        "  A<->>RTC: ICE check; media\n"
+        "  Note over Browser: Secure; SameSite=Lax\n"
+    )
+    sanitized = _sanitize_mermaid(seq)
+    assert "Validate input#59; rate-limit#59; hash password" in sanitized
+    assert "A<<->>RTC: ICE check#59; media" in sanitized
+    assert "Note over Browser: Secure#59; SameSite=Lax" in sanitized
+
+
 def test_render_mermaid_to_svg_success():
     code = "flowchart TD\n  NodeA --> NodeB\n"
     svg = render_mermaid_to_svg(code)
