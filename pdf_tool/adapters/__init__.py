@@ -11,6 +11,7 @@ from pdf_tool.adapters import (  # noqa: F401
     pdf_to_csv,
     pdf_to_docx,
     pdf_to_image,
+    pdf_to_pptx,
     pdf_to_text,
     split,
 )

@@ -52,6 +52,8 @@ pdf convert report.html --to pdf
 
 # Reverse Conversions (PDF → Editable formats)
 pdf convert scanned.pdf --to docx              # High-fidelity Word document reconstruction
+pdf convert presentation.pdf --to pptx         # Native PowerPoint presentation reconstruction
+pdf convert presentation.pdf --to pptx --mode visual  # Pixel-perfect slide deck (high-res images)
 pdf convert financial.pdf --to csv             # Extract detected tables to CSV
 pdf convert balance_sheet.pdf --to xlsx        # Extract tables to multi-sheet Excel
 pdf convert paper.pdf --to md                  # Structured Markdown (preserves headings, tables, code)
@@ -107,16 +109,40 @@ pdf split archive.pdf 10
 
 ---
 
-### 4. PDF Compress (`pdf compress` / `pdf z`)
+### 4. Universal Compression (`pdf compress` / `pdf z`)
 
-Reduce PDF file size using Ghostscript with automatic fallback to `pypdf`:
+Reduce file size across **PDFs, Images (JPEG, PNG, WebP), and Office Documents (DOCX, PPTX, XLSX)**:
 
 ```bash
+# Compress PDFs (Ghostscript with pure-Python PyMuPDF downsampling fallback)
 pdf compress heavy.pdf --level high -o optimized.pdf
 pdf compress report.pdf --level medium
+
+# Compress Images (strips metadata, optimal Huffman tables, and PNG quantization)
+pdf compress photo.jpg --level medium --max-dim 1920
+pdf compress diagram.png --level high
+
+# Compress Office Documents (DOCX, PPTX, XLSX media re-compression)
+pdf compress presentation.pptx --level high
+pdf compress report.docx --level medium
+
+# Target Size Budget (automatically tunes quality and dimensions to fit target)
+pdf compress upload.jpg --target-size 500KB
+pdf compress scan.pdf --target-size 2MB
+
+# Batch & Parallel Compression
+pdf compress "*.jpg" --output-dir ./compressed/ --parallel --workers 4
+pdf compress doc1.pdf doc2.pdf photo.png -o ./out/
+
+# Convert images to modern WebP during compression
+pdf compress banner.png --to-webp
 ```
 
 Levels supported: `high`, `medium`, `low`.
+* `--max-dim <pixels>`: Limits maximum image resolution.
+* `--target-size <size>`: Sets target file size limit (e.g. `2MB`, `500KB`).
+* `--to-webp`: Converts images to WebP for modern web delivery.
+* `--parallel` / `-j`: Runs batch compressions concurrently using worker threads.
 
 ---
 
@@ -195,6 +221,7 @@ pdf-tool v0.1.0  |  Python 3.12.0
 │ PyMuPDF     │ PDF → Image, PDF validation                      │ ✅ Built-in │
 │ WeasyPrint  │ Markdown (.md) & HTML → PDF                      │ ✅ Built-in │
 │ pdf2docx    │ PDF → Word (.docx) layout reconstruction         │ ✅ Built-in │
+│ python-pptx │ PDF → PowerPoint (.pptx) presentation slides     │ ✅ Built-in │
 │ pdfplumber  │ PDF → CSV & Excel table extraction               │ ✅ Built-in │
 │ pymupdf4llm │ PDF → Structured Markdown & plain text           │ ✅ Built-in │
 │ pypdf       │ Merge, Split                                     │ ✅ Built-in │
@@ -229,6 +256,7 @@ docker run --rm -v "$(pwd):/data" ghcr.io/example/pdf-tool doctor
 | Markdown (`.md`) | PDF | WeasyPrint + Pygments | *None (Pure Python)* |
 | HTML (`.html`) | PDF | WeasyPrint | *None (Pure Python)* |
 | PDF | DOCX | pdf2docx | *None (Pure Python)* |
+| PDF | PPTX | python-pptx + PyMuPDF | *None (Pure Python)* |
 | PDF | CSV / XLSX | pdfplumber + openpyxl | *None (Pure Python)* |
 | PDF | Markdown / TXT | pymupdf4llm | *None (Pure Python)* |
 | PDF (Scanned) | PDF (Searchable) | ocrmypdf | `tesseract` |

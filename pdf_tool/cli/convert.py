@@ -132,6 +132,13 @@ def convert(
         int | None,
         typer.Option("--table-index", help="Specific table index (1-based) to extract."),
     ] = None,
+    mode: Annotated[
+        str | None,
+        typer.Option(
+            "--mode",
+            help="Slide conversion mode: 'editable' (native shapes & text) or 'visual' (pixel-perfect).",
+        ),
+    ] = None,
 ) -> None:
     """Convert file(s) between formats.
 
@@ -224,6 +231,7 @@ def convert(
                 "pages": pages,
                 "page": page,
                 "table_index": table_index,
+                "mode": mode,
             },
         )
         return
@@ -287,6 +295,7 @@ def convert(
         "pages": pages,
         "page": page,
         "table_index": table_index,
+        "mode": mode,
     }
 
     with conversion_spinner(f"Converting '{input_path.name}' → {target_fmt.upper()} …"):
@@ -454,6 +463,8 @@ def _resolve_out_ext(target_fmt: str) -> str:
         "png": ".png",
         "pdf": ".pdf",
         "docx": ".docx",
+        "pptx": ".pptx",
+        "ppt": ".pptx",
         "csv": ".csv",
         "xlsx": ".xlsx",
         "md": ".md",

@@ -50,6 +50,11 @@ _PURE_PYTHON_ADAPTERS = [
         "Built-in Python library",
     ),
     ("pdf2docx", "PDF → Word (.docx) layout reconstruction", "Built-in Python library"),
+    (
+        "python-pptx",
+        "PDF → PowerPoint (.pptx) presentation reconstruction",
+        "Built-in Python library",
+    ),
     ("pdfplumber", "PDF → CSV & Excel table extraction", "Built-in Python library"),
     ("pymupdf4llm", "PDF → Structured Markdown & plain text", "Built-in Python library"),
     ("pypdf", "Merge, Split", "Built-in Python library"),
